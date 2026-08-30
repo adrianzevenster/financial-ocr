@@ -1,0 +1,49 @@
+schema_version: invoice-v1
+document_type: invoice
+
+fields:
+  - id: invoice_number
+    type: string
+    required: true
+    description: "Invoice identifier issued by the supplier. Preserve semantic punctuation; normalize whitespace only."
+
+  - id: organization_name
+    type: organization
+    required: true
+    description: "The invoice issuer/supplier (not the recipient)."
+
+  - id: invoice_date
+    type: date
+    required: true
+    description: "Date of the invoice. Normalized to YYYY-MM-DD."
+
+  - id: total_amount
+    type: decimal
+    required: true
+    description: "Total amount due. Stored as exact decimal; never floating point."
+
+  - id: currency
+    type: currency
+    required: true
+    description: "ISO 4217 currency code (e.g. EUR, USD, GBP). Infer only when evidence is unambiguous."
+
+  # Optional fields
+  - id: purchase_order_number
+    type: string
+    required: false
+    description: "Purchase order number referenced by the invoice."
+
+  - id: due_date
+    type: date
+    required: false
+    description: "Payment due date. Normalized to YYYY-MM-DD."
+
+  - id: vat_number
+    type: string
+    required: false
+    description: "VAT/tax registration number of the supplier."
+
+  - id: recipient_organization
+    type: organization
+    required: false
+    description: "The invoice recipient/buyer organization."

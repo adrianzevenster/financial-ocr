@@ -1,0 +1,41 @@
+policy_version: default-v1
+schema_version: invoice-v1
+
+naming:
+  template: "{invoice_date}_{organization_slug}_{document_type}_{invoice_number}.{extension}"
+  max_length: 180
+  collision_strategy: content_hash_suffix
+  # Characters replaced with underscore in slugs
+  unsafe_chars: '[<>:"/\\|?*\x00-\x1f]'
+  # Windows reserved names (case-insensitive prefix match)
+  reserved_names: [CON, PRN, AUX, NUL, COM1, COM2, COM3, COM4, COM5, COM6, COM7, COM8, COM9, LPT1, LPT2, LPT3, LPT4, LPT5, LPT6, LPT7, LPT8, LPT9]
+  # Maximum length for individual slug components
+  component_max_length: 60
+
+categories:
+  - id: supplier_invoices
+    destination: "Finance/Invoices/{invoice_date_year}/{invoice_date_month}"
+    when: "document_type == 'invoice'"
+
+  - id: credit_notes
+    destination: "Finance/CreditNotes/{invoice_date_year}/{invoice_date_month}"
+    when: "document_type == 'credit_note'"
+
+  - id: receipts
+    destination: "Finance/Receipts/{invoice_date_year}/{invoice_date_month}"
+    when: "document_type == 'receipt'"
+
+  - id: statements
+    destination: "Finance/Statements/{invoice_date_year}/{invoice_date_month}"
+    when: "document_type == 'statement'"
+
+  - id: proof_of_payment
+    destination: "Finance/ProofOfPayment/{invoice_date_year}/{invoice_date_month}"
+    when: "document_type == 'proof_of_payment'"
+
+thresholds:
+  auto_apply: 0.94
+  manual_review: 0.75
+  # Below manual_review -> quarantine
+  ocr_min_coverage: 0.30  # Minimum text coverage ratio from OCR to trust output
+  ocr_min_confidence: 60  # Minimum Tesseract confidence (0-100)

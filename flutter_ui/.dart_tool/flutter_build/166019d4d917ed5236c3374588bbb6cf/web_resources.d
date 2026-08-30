@@ -1,0 +1,1 @@
+:  /home/adrian/PycharmProjects/financial-ocr/flutter_ui/web/index.html
