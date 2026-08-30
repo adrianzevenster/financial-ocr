@@ -22,17 +22,35 @@ Financial document extraction and SharePoint reclassification pipeline.
 
 ### System packages
 
-```bash
-# Debian / Ubuntu
-sudo apt install tesseract-ocr ghostscript libmagic1
+These are required by the Python backend for OCR and MIME detection.
 
-# macOS (Homebrew)
+**Linux (Debian / Ubuntu)**
+```bash
+sudo apt install tesseract-ocr ghostscript libmagic1
+```
+
+**macOS**
+```bash
 brew install tesseract ghostscript libmagic
 ```
 
+**Windows**
+
+Install each manually:
+
+1. **Tesseract** — download the installer from [UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki) and install to `C:\Program Files\Tesseract-OCR`. Then add that folder to your system PATH.
+2. **Ghostscript** — download from [ghostscript.com/releases](https://www.ghostscript.com/releases/gsdnld.html) and install (64-bit). Its `bin\` folder is added to PATH by the installer.
+3. **libmagic** — install via pip after activating the venv (the `python-magic-bin` wheel bundles the DLL on Windows):
+
+```powershell
+pip install python-magic-bin
+```
+
+> Note: `python-magic` is listed in `pyproject.toml` for Linux/macOS. On Windows, `python-magic-bin` replaces it — install it manually after `pip install -e ".[dev]"` if you see `MagicException` errors.
+
 - **Tesseract** — OCR engine used when PDFs have no embedded text
 - **Ghostscript** — required by ocrmypdf for PDF/A conversion
-- **libmagic** — MIME type detection (`python-magic`)
+- **libmagic** — MIME type detection
 
 ### Python
 
@@ -55,11 +73,19 @@ flutter --version
 ## 2. Python backend setup
 
 ```bash
-# From the repo root
+# Linux / macOS
 python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-
+source .venv/bin/activate
 pip install -e ".[dev]"
+```
+
+```powershell
+# Windows PowerShell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
+# If you get an execution policy error:
+#   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 This installs the `finextract` CLI and all runtime + dev dependencies.
@@ -76,65 +102,109 @@ finextract version
 
 ### Install Flutter
 
-Flutter is **not** installed system-wide by default. Install it once:
+#### Windows
 
-```bash
-# Download the SDK (adjust version/URL as needed)
-cd ~
-git clone https://github.com/flutter/flutter.git -b stable
+1. Download the Flutter SDK zip from [flutter.dev/docs/get-started/install/windows](https://docs.flutter.dev/get-started/install/windows/desktop)
+2. Extract to a folder without spaces or special characters, e.g. `C:\dev\flutter`
+3. Add `C:\dev\flutter\bin` to your **System PATH**:
+   - Search → "Edit the system environment variables" → Environment Variables → Path → New
+4. Open a new PowerShell window and verify:
 
-# Add to PATH (add this to ~/.bashrc or ~/.zshrc to persist)
-export PATH="$HOME/flutter/bin:$PATH"
-
-# Verify
+```powershell
 flutter doctor
 ```
 
-Fix any issues `flutter doctor` reports before continuing (usually missing Linux build tools or Chrome).
+Flutter on Windows also requires **Visual Studio 2022** (with the "Desktop development with C++" workload) for the Windows desktop target, and **Chrome** for the web target. `flutter doctor` will tell you exactly what's missing.
 
-### Install dependencies
+#### Linux
+
+```bash
+cd ~
+git clone https://github.com/flutter/flutter.git -b stable
+export PATH="$HOME/flutter/bin:$PATH"   # add to ~/.bashrc to persist
+flutter doctor
+```
+
+Linux desktop builds also need:
+
+```bash
+sudo apt install clang cmake ninja-build libgtk-3-dev
+```
+
+#### macOS
+
+```bash
+brew install --cask flutter
+flutter doctor
+```
+
+---
+
+### Install UI dependencies
 
 ```bash
 cd flutter_ui
 flutter pub get
 ```
 
-### Run in Chrome (recommended for quick iteration)
+---
 
-The UI talks to the API server at `http://localhost:8000`. Start the API server first (see section 4), then:
+### Run in Chrome (fastest, works on all OSes)
 
-```bash
+The UI talks to the API server at `http://localhost:8000`. **Start the API server first** (see section 4), then:
+
+```powershell
+# Windows PowerShell
 cd flutter_ui
 flutter run -d chrome
 ```
 
-Chrome opens automatically. The app bar shows a **green dot** when the server is reachable, grey when it isn't — tap it to retry the health check.
+```bash
+# Linux / macOS
+cd flutter_ui
+flutter run -d chrome
+```
 
-### Run as a Linux desktop app
+Chrome opens automatically. The app bar shows a **green dot** when the server is reachable, grey when it isn't — click it to retry.
+
+---
+
+### Run as a native desktop app
+
+```powershell
+# Windows
+flutter run -d windows
+```
 
 ```bash
-# One-time: make sure Linux build dependencies are present
-sudo apt install clang cmake ninja-build libgtk-3-dev
-
-cd flutter_ui
+# Linux
 flutter run -d linux
+
+# macOS
+flutter run -d macos
 ```
+
+---
 
 ### What the UI does
 
 - **Drop zone** — drag a PDF, PNG, JPG, TIFF, BMP, or WebP onto it, or click to open a file picker
 - **Extraction** — file is sent to `POST /extract` on the local API server (120 s timeout)
 - **Results panel** — shows extracted fields, confidence bars, proposed filename, and proposed SharePoint category
-- **Server status** — green/grey indicator in the top-right corner; tap to re-check
+- **Server status** — green/grey indicator in the top-right corner; click to re-check
+
+---
 
 ### Troubleshooting
 
 | Symptom | Fix |
 |---|---|
 | Grey "Server offline" banner | API server isn't running — start it with `uvicorn finextract.server:app --reload` |
-| CORS error in browser console | The API already allows all origins — check the server is on port 8000 |
-| `flutter: command not found` | Flutter SDK not on `$PATH` — see install step above |
-| Linux build fails on missing libs | Run `sudo apt install clang cmake ninja-build libgtk-3-dev` |
+| CORS error in browser console | The API already allows all origins — confirm the server is on port 8000 |
+| `flutter: command not found` | Flutter `bin/` folder not on `$PATH` — re-open the terminal after adding it |
+| Windows desktop build fails | Install Visual Studio 2022 with "Desktop development with C++" workload |
+| Linux build fails on missing libs | `sudo apt install clang cmake ninja-build libgtk-3-dev` |
+| macOS build fails | Run `xcode-select --install` and accept the license |
 
 ---
 
